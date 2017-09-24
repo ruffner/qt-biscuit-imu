@@ -8,9 +8,10 @@
 #include <WiFiUdp.h>
 #include <Wire.h>
 
-#define COMMAND_CONFIGURE "CONFIGURE"
-#define COMMAND_STREAM_START "STREAM_START"
-#define COMMAND_STREAM_STOP "STREAM_STOP"
+#define COMMAND_ACK           "GOTCHA"
+#define COMMAND_CONFIGURE     "CONFIGURE"
+#define COMMAND_STREAM_START  "STREAM_START"
+#define COMMAND_STREAM_STOP   "STREAM_STOP"
 
 #define WIFI_SSID "wiltj"
 #define WIFI_PASS "82417451"
@@ -53,6 +54,7 @@ char packet[64];
 // FOR IMU DATA SENDING
 StaticJsonBuffer<512> jsonBuffer;
 JsonObject& root = jsonBuffer.createObject();
+JsonObject& quatData = root.createNestedObject("quaternion");
 
 String targetIp = SERVER_IP;
 
@@ -115,10 +117,7 @@ void streamData() {
 //  if ( streamConfig & OPTION_QUAT ){
 //    JsonObject& quatData = root.createNestedObject("quaternion");
 //    imu::Quaternion quat = bno055.getQuat();
-//    quatData["w"] = (float)quat.w();
-//    quatData["x"] = (float)quat.x();
-//    quatData["y"] = (float)quat.y();
-//    quatData["z"] = (float)quat.z();
+
 //  }
 
 //  if( streamConfig & OPTION_EULER ){
@@ -129,11 +128,13 @@ void streamData() {
 //    eulerData["z"] = (float)euler.z();
 //  }
 
+    root["time"] = lastImu;
+
     imu::Quaternion quat = bno055.getQuat();
-    root["w"] = (float)quat.w();
-    root["x"] = (float)quat.x();
-    root["y"] = (float)quat.y();
-    root["z"] = (float)quat.z();
+    quatData["w"] = (float)quat.w();
+    quatData["x"] = (float)quat.x();
+    quatData["y"] = (float)quat.y();
+    quatData["z"] = (float)quat.z();
   
   String s = "";
   root.printTo(s);
@@ -156,7 +157,6 @@ void handlePacket() {
     String cmd(packet);
 
     Serial.print("packet data: ");
-    Serial.println(cmd.substring(0, strlen(COMMAND_STREAM_START)));
 
     if ( cmd.substring(0,strlen(COMMAND_CONFIGURE)).equals(String(COMMAND_CONFIGURE)) ) {
       Serial.println("SENDING IP ADDRESS FOR CONFIGURATION");
@@ -165,7 +165,7 @@ void handlePacket() {
       Serial.print("ASSIGNING NEW IP ADDR FOR STREAM TARGET: ");
       Serial.println(newIp);
       targetIp = newIp;
-      udpSend(targetIp);
+      udpSend(COMMAND_ACK);
     } else if ( cmd.substring(0, strlen(COMMAND_STREAM_START)).equals(String(COMMAND_STREAM_START)) ) {
       Serial.print("STARTING STREAM");
       isAssociated = 1;
@@ -250,6 +250,12 @@ void disableStream(uint8_t s) {
 void udpSend(String &s) {
   udp.beginPacket(targetIp.c_str(), SERVER_PORT);
   udp.write(s.c_str(), s.length());
+  udp.endPacket();
+}
+
+void udpSend(const char *s) {
+  udp.beginPacket(targetIp.c_str(), SERVER_PORT);
+  udp.write(s, strlen(s));
   udp.endPacket();
 }
 

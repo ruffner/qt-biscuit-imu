@@ -14,18 +14,22 @@
 #include <QVBoxLayout>
 #include <QHostAddress>
 #include <QJsonDocument>
+#include <QJsonParseError>
 #include <QJsonObject>
 #include <QVariantMap>
 #include <QDialogButtonBox>
 #include <QAbstractSocket>
 #include <QNetworkDatagram>
 #include <QUdpSocket>
+#include <QQuaternion>
 
-#define DEBUG 1
+#include <QHostAddress>
+#include <QNetworkInterface>
 
-#define COMMAND_CONFIGURE "CONFIGURE"
-#define COMMAND_STREAM_START "STREAM_START"
-#define COMMAND_STREAM_STOP "STREAM_STOP"
+#define COMMAND_ACK             "GOTCHA"
+#define COMMAND_CONFIGURE       "CONFIGURE"
+#define COMMAND_STREAM_START    "STREAM_START"
+#define COMMAND_STREAM_STOP     "STREAM_STOP"
 
 #define BISCUIT_ADDRESS "biscuit.local"
 
@@ -44,11 +48,19 @@ public:
     explicit RUFBiscuitIMUObject(QObject *parent);
     ~RUFBiscuitIMUObject();
 
+    bool isValid() {
+        return (b_state == BISCUIT_CONNECTED);
+    }
+    bool isNull() {
+        return (b_state != BISCUIT_CONNECTED);
+    }
+
 private:
     void startStreaming();
     void configureStream();
 
     QUdpSocket *socket;
+    QHostAddress myAddress;
     biscuit_state b_state;
 
 signals:

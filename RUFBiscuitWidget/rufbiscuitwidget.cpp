@@ -10,6 +10,7 @@ RUFBiscuitWidget::RUFBiscuitWidget(QWidget *parent) : QWidget(parent), imuObject
     imuObject = new RUFBiscuitIMUObject(this);
 
     connect(streamButton, SIGNAL(clicked()), imuObject, SLOT(onToggleStream()));
+
     connect(imuObject, SIGNAL(connected()), this, SLOT(onConnected()));
     connect(imuObject, SIGNAL(streamStarted()), this, SLOT(onStreamStart()));
     connect(imuObject, SIGNAL(streamStopped()), this, SLOT(onStreamStop()));
@@ -23,7 +24,7 @@ RUFBiscuitWidget::~RUFBiscuitWidget()
 
 void RUFBiscuitWidget::onConnected()
 {
-    qDebug() << "BISCUIT FOUND ON NETWORK";
+    qDebug() << "BISCUIT CONFIGURED";
     streamButton->setEnabled(true);
 }
 
